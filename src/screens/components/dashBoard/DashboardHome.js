@@ -247,7 +247,6 @@ export default function DashboardHome({navigation}) {
       </View> : null}  */}
     <View>
     </View>
- 
     <Provider   
     settings={{
      icon: props => <MaterialIcon {...props} />,

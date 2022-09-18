@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useState } from 'react';
-import { SafeAreaView, View, Text, TextInput, Image, Alert, StatusBar, ToastAndroid } from 'react-native';
+import { SafeAreaView, View, Text, TextInput, Image, Alert, StatusBar, ToastAndroid,ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { ScrollView, TouchableOpacity } from 'react-native-gesture-handler';
 import COLORS from './shared/colors/color';
@@ -8,7 +8,7 @@ import STYLES from './shared/styles';
 import logos from '../../assets/logos';
 import { signup } from '../../utils/auth';
 import auth from '@react-native-firebase/auth';
-import { ActivityIndicator } from 'react-native-paper';
+
 
 const SignUpScreen = ({ navigation }) => {
     const [name, setName] = useState('');
@@ -18,8 +18,8 @@ const SignUpScreen = ({ navigation }) => {
     const [loading,setLoading] = useState(false)
     const [credentialsError,setCredentialsError] = useState('');
 
-
     const handleOnSubmit = () => {
+        console.log(email,password,'dataaaaa')
         if (email != '' && password != '' && confirmPassword) {
             if (password === confirmPassword) {
                 setLoading(true)
@@ -29,19 +29,21 @@ const SignUpScreen = ({ navigation }) => {
                     ToastAndroid.show('Logged In', ToastAndroid.SHORT);
                 })
                 .catch(error => {   
+                    console.log(error,'nionono')
                     switch(error.code) {
                       case 'auth/weak-password':
-                            setCredentialsError('Email or Password is incorrect')
+                            setCredentialsError('Provide strong password')
                             setLoading(false)
                             break;
+                     case 'auth/email-already-in-use':
+                           setCredentialsError('The email address is already in use by another account.')
+                           setLoading(false)
+                           break;
                       default:
                             setLoading(false)
                             break
                    }
-                 })
-        
-
-       
+                 })       
     }
 }
     }
@@ -115,9 +117,12 @@ const SignUpScreen = ({ navigation }) => {
                     </View>
                     <TouchableOpacity onPress={() => handleOnSubmit()}>
                         <View style={STYLES.btnPrimary}>
+                        <View style={{flexDirection:'row'}}>
+                        {loading? <ActivityIndicator size='small' style={{alignSelf:'center'}} color="white"/> :null}
                             <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18 }}>
                                 Sign Up
                             </Text>
+                            </View>
                         </View>
                     </TouchableOpacity>
                     {credentialsError.length >0 ? <Text style={{color:'red',textAlign:'center'}}>{credentialsError}</Text> :null}
@@ -136,7 +141,6 @@ const SignUpScreen = ({ navigation }) => {
                     </Text>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                     <View style={{flexDirection:'row'}}>
-                    {loading? <ActivityIndicator size='small' style={{alignSelf:'center'}} color="white"/> :null}
                         <Text style={{ color: COLORS.pink, fontWeight: 'bold' }}>
                             Sign in
                         </Text>

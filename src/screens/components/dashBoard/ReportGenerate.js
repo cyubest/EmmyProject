@@ -95,10 +95,7 @@ export default function ReportGenerate() {
                 </table>
             </article>
             <aside>
-              <h1><span>Additional Notes</span></h1>
-              <div>
-                <p>A finance charge of 1.5% will be made on unpaid balances after 30 days.</p>
-              </div>
+              <h1><span>This is our report </span></h1>
             </aside>
           </body>
         </html>
