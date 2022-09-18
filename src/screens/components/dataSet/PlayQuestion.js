@@ -6,32 +6,52 @@ import {   View,
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Alert
+  Alert,
+  ToastAndroid
  } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
-import { getAnswersByQuestionId, getDataSetById, getQuestionsByDataId } from '../../../utils/database';
+import { addAnswerForQuestion, getAnswersByQuestionId, getDataSetById, getQuestionsByDataId } from '../../../utils/database';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import COLORS from '../shared/colors/color';
 import FormButton from '../shared/FormButton';
 import ResultModal from '../modal/ResultModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import EntypoIcon from 'react-native-vector-icons/Entypo';
+import OcticonIcon from 'react-native-vector-icons/Octicons';
+import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import moment from 'moment';
+import SuccessModal from '../../../constants/SuccessModal';
+
+
+const successM ="Thank you for your answers";
 
  const  PlayQuestionScreen = ({navigation,route}) =>{
-     const [currentQuestionId, setCurrentQuestionId] = useState(route.params.questId);
+     let today = new Date();
+     const [currentQuestionId, setCurrentQuestionId] = useState(route?.params?.questId);
+     const [dataTitle,setDataTitle]= useState(route?.params?.dataTitle);
+     const [dataDescription,setDataDescription]= useState(route?.params?.dataDescription)
+     const [currentUserLogin, setCurrentUserLogin] = useState(route?.params?.user);
      const [title, setTitle] = useState('');
      const [questions,setQuestions] = useState([]);
      const [isResultModalVisible, setIsResultModalVisible] = useState(false);
      const [selectedAnswer,setSelectedAnswer] = useState([]);
-     const [allQuestion,setAllQuestion] = useState([]);
-     const [subQuestList,setSubQuestList] = useState([]);
      const [userLoggedIn,setUserLoggedIn] = useState(null);
-     const [showAllOption,setShowAllOption] = useState(true);
-     const [hideAllOption,setHideAllOption] = useState(false);
      const [first, setFirst] = useState(0);
-     const [selectedItem, setSelectedItem] = useState(0);
-     const [itemValue, setItemValue] = useState(0);
-   
+     const [selectedOption,setSelectedOption]= useState([]);
+     const[created_on,setCreated_on] = useState(moment(today).format('MMMM Do YYYY, h:mm:ss a'));
+     const [isSucceModalVisible, setIsSucceModalVisible] = useState(false);
+     const [loading,setLoading]= useState(false)
+
+     console.log(dataTitle,dataDescription,'hhdhsdhsd')
+
+     useEffect(() => {
+      if(isSucceModalVisible){
+          setTimeout(() => {
+              setIsSucceModalVisible(false);
+          }, 3000);
+      }
+  }, [isSucceModalVisible]);
 
      useEffect(() => {
        getLoggedUser();
@@ -43,7 +63,7 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
      setUserLoggedIn(user);
     }
      
-     const [data, setData] = React.useState({
+    const [data, setData] = React.useState({
       text: '',
       isRequired: '',
       })
@@ -53,113 +73,72 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
               text: val,
           });
       };
-
-    const handlePress = (option) => {
-      if (selectedAnswer.includes(option.index)) {
-          const newAnswers = selectedAnswer.filter(itemId => itemId !== option.index)
-          return setSelectedAnswer(newAnswers)
+  
+  const selectQuestion  = (option,optionIndex)=>{
+    questions.map((item,index)=>{
+      if(selectedAnswer.includes(option)){
+       const newArray = item.options.filter(indexId => indexId !== option)   
+       return  setSelectedAnswer(newArray)
       }
-      setSelectedAnswer([...selectedAnswer,option])
-      console.log(selectedAnswer, 'item');
+      setSelectedAnswer([...selectedAnswer])
+      console.log(selectedAnswer)
+    })
   }
+  const getSelected = (option) => selectedOption.includes(option);
+  
+  const handleSelectAnswer = async() => {
+    let currentAnswerId = Math.floor(
+      100000 + Math.random() * 9000,
+  ).toString();
 
-  const handleSelectAnswer = () => {
-    const payload = {
-      
-    }
-      console.log(JSON.stringify(selectedAnswer,0,2),'newAnswers list of selected')
+  // Save to answer to the firestore
+  setLoading(true)
+  await addAnswerForQuestion(currentAnswerId,selectedAnswer,dataTitle,dataDescription,created_on,userLoggedIn, {
+    selectedAnswer,
+    created_on,
+    dataTitle,
+    dataDescription,
+    userLoggedIn
+  });
+  // ToastAndroid.show('Answer saved', ToastAndroid.SHORT);
+
+      // console.log(JSON.stringify(selectedAnswer,0,2),'newAnswers list of selected')
+      console.log(selectedAnswer,'what is selected')
+      setLoading(false)
+      setIsSucceModalVisible(true);
+      navigation.navigate('HomeScreen')
   }
+  
+  const getQuizAndQuestionDetails = async () => {
+    // Get Quiz
+    let currentQuiz = await getDataSetById(currentQuestionId);
+    currentQuiz = currentQuiz.data();
+    setTitle(currentQuiz.title);
 
-
- 
-  const deselectItems = () => setSelectedItems([]);
-
-     const getAllDataSetAndQuestions = async() =>{
-        //  get DataSet
-        let currentDataSet =  await getDataSetById(currentQuestionId)
-        currentDataSet = currentDataSet.data();
-        setTitle(currentDataSet.title);
-        //  Get questions for current DataSet
-        const questions = await getQuestionsByDataId(currentQuestionId)
-
-        console.log(currentDataSet,'currentDataSet now');
-       
-        // Transform and shuffle options
-        let tempQuestions = [];
-       
-        await questions.docs.forEach(async res=>{
-          let question = res.data();
-          await tempQuestions.push({id: res.id, ...res.data()});
-          
-          // // Create Single array of all options and shuffle it
-          // question.options = shuffleArray([
-          //   ...question.options,
-          // ]);
-         
-          await setAllQuestion([...tempQuestions])
-        });
-
-        setQuestions([...tempQuestions]);
-     };
-    useEffect(() => {
-     getAllDataSetAndQuestions();
-    }, [])
-
-   const  getSubQuestionsList = async(item) =>{
-    if(showAllOption){
-      setShowAllOption(false);
-      setHideAllOption(true);
-    }else{
-      setShowAllOption(true);
-      setHideAllOption(false);
-    }
-    const subQuestionsList = await getAnswersByQuestionId(currentQuestionId,item.id)
-
-    // console.log(subQuestionsList,'subQuestions list');
-    
-    let tempSubQuestionsList = [];
-    await subQuestionsList.docs.forEach(async res=>{
+    // Get Questions for current quiz
+    const questions = await getQuestionsByDataId(currentQuestionId);
+    console.log(questions)
+    // Transform and shuffle options
+    let tempQuestions = [];
+    await questions.docs.forEach(async res => {
       let question = res.data();
-      await tempSubQuestionsList.push({id: res.id, ...res.data()});
       
-      // // Create Single array of all options and shuffle it
-      // question.options = shuffleArray([
-      //   ...question.options,
+      console.log(JSON.stringify( question,0,2),'ref sus')
+      // Create Single array of all options and shuffle it
+      // question.allOptions = shuffleArray([
+      //   ...question.incorrect_answers,
+      //   question.correct_answer,
       // ]);
-
-      console.log(res,'subQuestions');
-     
-      await setSubQuestList([...tempSubQuestionsList])
+      await tempQuestions.push(question);
+      console.log(questions)
     });
-    console.log(tempSubQuestionsList,'tempSubQuestionsList');
-   }
 
-   const handleSelectOption = (item) => {
-    if (subQuestList.includes(item.id)) {
-        const listSelected = subQuestList.filter((itemId) => itemId !== item.id);
-        return setSelectedAnswer(listSelected);
-      }
-      setSelectedAnswer([...selectedAnswer, item.id]);
-      setItem(item.id)
-      console.log(selectedAnswer, 'item of all selected answer');
-    }
+    setQuestions([...tempQuestions]);
+  };
 
-    const getSelected = (item) => selectedAnswer.includes(item.id);
-     
-    const setItem = (item) => {
-      setItemValue(item)
-    }
-  
-  
-  
-    const getSelectedItem = (item) => {
-      setAvatar(item)
-      setSelectedItem({
-        selectedItem: item
-      })
-      console.log(itemValue)
-    }
-  
+  useEffect(() => {
+    getQuizAndQuestionDetails();
+  },[]);
 
   return (
     <SafeAreaView
@@ -176,6 +155,7 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
           justifyContent: 'space-between',
           paddingVertical: 10,
           paddingHorizontal: 20,
+          backgroundColor: COLORS.white,
           elevation: 4,
         }}>
         {/* Back Icon */}
@@ -186,62 +166,19 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
         />
 
         {/* Title */}
-        <Text style={{fontSize: 16, marginLeft: 10}}>{title}</Text>
+        <Text style={{fontSize: 16}}>{title}</Text>
 
         {/* Correct and incorrect count */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          {/* Correct */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderTopLeftRadius: 10,
-              borderBottomLeftRadius: 10,
-            }}>
-            <MaterialIcons
-              name="check"
-              size={14}
-              style={{color: COLORS.white}}
-            />
-            <Text style={{color: COLORS.white, marginLeft: 6}}>
-              
-            </Text>
-          </View>
+        
 
           {/* Incorrect */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderTopRightRadius: 10,
-              borderBottomRightRadius: 10,
-            }}>
-            <MaterialIcons
-              name="close"
-              size={14}
-              style={{color: COLORS.white}}
-            />
-            <Text style={{color: COLORS.white, marginLeft: 6}}>
-              
-            </Text>
-          </View>
-        </View>
+       
+      
       </View>
 
       {/* Questions and Options list */}
       <FlatList
-        data={allQuestion}
+        data={questions}
         style={{
           flex: 1,
           backgroundColor: COLORS.background,
@@ -249,84 +186,21 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
         showsVerticalScrollIndicator={false}
         keyExtractor={item => item.question}
         renderItem={({item, index}) => (
-          
           <View
             style={{
               marginTop: 14,
               marginHorizontal: 10,
-              // backgroundColor: COLORS.white,
+              backgroundColor: COLORS.white,
               elevation: 2,
               borderRadius: 2,
             }}>
-
-            <TouchableOpacity style={{padding: 20,}} onPress={()=>{
-              getSubQuestionsList(item);
-              setFirst(first === index ? null : index)
-            }}>
-              <View style={{flexDirection:'row'}}>
+            <View style={{padding: 20}}>
               <Text style={{fontSize: 16}}>
-                {index + 1}. {item.question} 
+                {index + 1}. {item.question}
               </Text>
-               <TouchableOpacity onPress={()=>getSubQuestionsList(item)}>
-             {showAllOption ?<AntDesign 
-                  name="right"
-                  size={16}
-                  style={{marginLeft:0,top:5}}
-                  color={COLORS.primary}
-                />:
-                <AntDesign
-                name="down"
-                size={16}
-                style={{marginLeft:0,top:6}}
-                color={COLORS.primary}
-                />
-                }
-                 {/* <AntDesign name={showAllOption && first === index ? 'right': 'down'} size={16} style={{marginLeft:0,top:6}} color={COLORS.primary} /> */}
-               </TouchableOpacity>
-              
-              
-              </View>
-              <View>
-                {hideAllOption ?
-                    subQuestList.map((item,index)=>{
-                      return(
-                      <TouchableOpacity
-                      key={index}
-                      style={{
-                        paddingVertical: 14,
-                        paddingHorizontal: 20,
-                        backgroundColor: COLORS.green,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'flex-start',
-                      }}
-                      onPress={()=>
-                        handleSelectOption(item)
-                      }>
-                      <Text
-                        style={{
-                          width: 25,
-                          height: 25,
-                          padding: 2,
-                          borderWidth: 1,
-                          textAlign: 'center',
-                          marginRight: 16,
-                          borderRadius: 25,
-                          
-                        }}>
-                         
-                        {getSelected(item) && <AntDesign name="check" size={29} color={COLORS.primary} style={{fontWeight:'bold'}}/>}  
-                      </Text>
-                      <Text style={{color:COLORS.black}}>
-                        {item.answer}
-                      </Text>
-                    </TouchableOpacity>
-                    )}):null
-                }
-               </View>
-            </TouchableOpacity>
+            </View>
             {/* Options */}
-            {/* {item.options.map((option, optionIndex) => {
+            {item.options.map((option, optionIndex) => {
               return (
                 <TouchableOpacity
                   key={optionIndex}
@@ -334,61 +208,76 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
                     paddingVertical: 14,
                     paddingHorizontal: 20,
                     borderTopWidth: 1,
-                    // borderColor: COLORS.border,
-                    backgroundColor: getOptionBgColor(item, option),
+                    borderColor: COLORS.border,
+                    backgroundColor: '',
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'flex-start',
                   }}
                   onPress={() => {
-                  handlePress(optionIndex)
+                    // Increase correct/incorrect count
+                    // if (option == item.correct_answer) {
+                    //   setCorrectCount(correctCount + 1);
+                    // } else {
+                    //   setIncorrectCount(incorrectCount + 1);
+                    // }
+                    // selectQuestion(option,optionIndex);
+                    // if(option[optionIndex] == optionIndex ){
+                    //   setQuestions([...option])
+                    // }
+                    const optionExist = selectedOption.find(item =>{
+                      return item === option;
+                    })
+                   if(optionExist){
+                    selectedOption.splice(option)
+                    return false
+                   }
+
+                    selectedOption.push(option);
+                    let tempQuestions = [...questions];
+                    tempQuestions[index].selectedOption = selectedOption;
+                    setQuestions([...tempQuestions]);
+                    console.log(JSON.stringify(questions,0,2))
+                    setSelectedAnswer(questions)
                   }}>
-                  <Text
+                  {/* <Text
                     style={{
                       width: 25,
                       height: 25,
                       padding: 2,
                       borderWidth: 1,
-                      // borderColor: COLORS.border,
+                      borderColor: COLORS.border,
                       textAlign: 'center',
                       marginRight: 16,
                       borderRadius: 25,
-                      color: getOptionTextColor(item, option),
+                     
                     }}>
-                    
-                  </Text>
-                  <Text style={{color: getOptionBgColor(item, option)}}>
+                    {optionIndex + 1}
+                  </Text> */}
+                  <MaterialCommunityIcon name='checkbox-blank-circle-outline' size={20} color={COLORS.primary}/>
+                  {getSelected(option) && <View style={{ position: 'absolute',
+                    width: '100%',
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: 'rgba(0,0,0,0.4)',
+                    top: 0,
+                    left: 0}} />}
+                  <Text style={{color: 'black',marginLeft:10}}>
                     {option}
                   </Text>
                 </TouchableOpacity>
               );
-            })} */}
-              <View  style={{ marginTop:3}}>
-              <Text style={{fontSize: 16,color:'black',marginLeft:12}}>
-                     Additional Information 
-                    </Text>
-                    <View style={styles.textViewStyle}>
-                    <TextInput 
-                       placeholder="Write few words about...."
-                       maxLength={140}
-                       multiline={true}
-                       autoCapitalize="none"
-                       onChangeText={val => textInputChange(val)}
-                       value={data.text}
-                       underlineColorAndroid="transparent"
-                       style={styles.textInPutStyle}
-                    />
-                       <Text style={styles.textInside}>
-                            {data.text.length}/140 Characters
-                        </Text>
-                    </View>
-                  </View>
+            })}
           </View>
         )}
+       
+      
+
         ListFooterComponent={() => (
           <FormButton
             labelText="Submit"
             style={{margin: 10}}
+            loading={loading}
             handleOnPress={() => {
               handleSelectAnswer();
             }}
@@ -397,20 +286,13 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
       />
 
       {/* Result Modal */}
-      <ResultModal
-        isModalVisible={isResultModalVisible}
-        handleOnClose={() => {
-          setIsResultModalVisible(false);
-        }}
-        handleRetry={() => {
-          getQuizAndQuestionDetails();
-          setIsResultModalVisible(false);
-        }}
-        handleHome={() => {
-          navigation.goBack();
-          setIsResultModalVisible(false);
-        }}
-      />
+      <SuccessModal
+                    isModalVisible={isSucceModalVisible}
+                    successMessage={successM}
+                    handleOnClose={() => {
+                    setIsSucceModalVisible(false);
+                    }}
+                />
     </SafeAreaView>
   )
 }

@@ -3,6 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { AnswersData, CreateDataSets, HomeScreen, PlayQuestionScreen } from '../components';
 import DashboardHome from '../components/dashBoard/DashboardHome';
 import AdditionalUserInformation from '../components/AdditionalUserInformation';
+import AnsweredList from '../components/dashBoard/AnsweredList';
 
 
 const Stack = createStackNavigator();
@@ -17,19 +18,7 @@ const MainAppNavigators = () => {
             <Stack.Screen name="AddQuestion" component={AnswersData} />
             <Stack.Screen name="PlayQuestionScreen" component={PlayQuestionScreen}/>
             <Stack.Screen name="AdditionalUserInformation" component={AdditionalUserInformation}/>
-            <Stack.Screen name="DashBoard" component={DashboardHome} options={{
-                headerShown: true,
-                headerTitle: 'DashBoard',
-                headerTitleStyle: {
-                    fontSize: 20,
-                    fontWeight: 'bold',
-                    paddingLeft: 80,
-                },
-                headerStyle: {
-                    backgroundColor: '#fff',
-                },
-            }} 
-                />
+           
         </Stack.Navigator>
     );
 }

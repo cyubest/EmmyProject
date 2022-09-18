@@ -7,6 +7,7 @@ import { LogBox } from 'react-native';
 import MainAppNavigators from './src/screens/navigators/MainAppNavigator';
 import SplashScreen from 'react-native-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AdminNavigator from './src/screens/navigators/AdminNavigator';
 
 
 
@@ -25,8 +26,10 @@ const App = () => {
   }, []);
 
   const onAuthStateChanged = async (user) => {
+    console.log(user,'user now information')
     await setCurrentUser(user)
     {user? await AsyncStorage.setItem('user',user?.uid):null}
+    {user? await AsyncStorage.setItem('email',user?.email):null}
     setIsLoading(false)
   }
 
@@ -42,7 +45,7 @@ const App = () => {
 
   return (
     <NavigationContainer>
-      {currentUser ? <MainAppNavigators /> : <AuthStackNavigator />}
+      {currentUser && currentUser?.email === 'admin@gmail.com' ? <AdminNavigator/>: currentUser?.email != 'admin@gmail.com' && currentUser?.email !=null ?  <MainAppNavigators />:<AuthStackNavigator />}
     </NavigationContainer>
   );
 };

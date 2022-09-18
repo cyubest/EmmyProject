@@ -1,10 +1,11 @@
 import firestore from '@react-native-firebase/firestore';
 import { ToastAndroid } from 'react-native';
 
-export const createDataSetsQuestion = (currentDataSetId, title, description,userId) => {
+export const createDataSetsQuestion = (currentDataSetId, title, description,created_on,userId) => {
     return firestore().collection('DataSet').doc(currentDataSetId).set({
         title,
         description,
+        created_on,
         userId
     })
 }
@@ -19,6 +20,16 @@ export const createQuestions = (currentDataSetId, currentQuestionId, question) =
             console.log(err)
         })
 
+}
+
+export const addAnswerForQuestion = (currentAnswerId,selectedAnswer,dataTitle,dataDescription,created_on,userId)=>{
+    return firestore().collection('CollectionAnswer').doc(currentAnswerId).set({
+        userId,
+        selectedAnswer,
+        dataTitle,
+        dataDescription,
+        created_on
+    })
 }
 
 export const createOptionList = (currentDataSetId, currentQuestionId,currAnswerId,answer) => {
@@ -46,6 +57,11 @@ export const createAnsweredQuestions = (currentDataSetId, currentQuestionId, que
 
 export const getQuestions = () =>{
     return firestore().collection('DataSet').get();
+}
+
+// Get List of all 
+export const getAnswersList = () =>{
+    return firestore().collection('CollectionAnswer').get();
 }
 
 // Get Data Set by Id

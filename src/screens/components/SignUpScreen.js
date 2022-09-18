@@ -1,29 +1,50 @@
 import 'react-native-gesture-handler';
 import React, { useState } from 'react';
-import { SafeAreaView, View, Text, TextInput, Image, Alert, StatusBar } from 'react-native';
+import { SafeAreaView, View, Text, TextInput, Image, Alert, StatusBar, ToastAndroid } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { ScrollView, TouchableOpacity } from 'react-native-gesture-handler';
 import COLORS from './shared/colors/color';
 import STYLES from './shared/styles';
 import logos from '../../assets/logos';
 import { signup } from '../../utils/auth';
+import auth from '@react-native-firebase/auth';
+import { ActivityIndicator } from 'react-native-paper';
 
 const SignUpScreen = ({ navigation }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading,setLoading] = useState(false)
+    const [credentialsError,setCredentialsError] = useState('');
+
 
     const handleOnSubmit = () => {
         if (email != '' && password != '' && confirmPassword) {
             if (password === confirmPassword) {
-                signup(email, password);
-            } else {
-                Alert.alert('password did not match')
-            }
-        }
-    }
+                setLoading(true)
+                auth().createUserWithEmailAndPassword(email, password)
+                .then(() => {
+                    setLoading(false)
+                    ToastAndroid.show('Logged In', ToastAndroid.SHORT);
+                })
+                .catch(error => {   
+                    switch(error.code) {
+                      case 'auth/weak-password':
+                            setCredentialsError('Email or Password is incorrect')
+                            setLoading(false)
+                            break;
+                      default:
+                            setLoading(false)
+                            break
+                   }
+                 })
+        
 
+       
+    }
+}
+    }
     return (
         <SafeAreaView
             style={{ paddingHorizontal: 20, flex: 1, backgroundColor: COLORS.white }}>
@@ -99,7 +120,7 @@ const SignUpScreen = ({ navigation }) => {
                             </Text>
                         </View>
                     </TouchableOpacity>
-                    
+                    {credentialsError.length >0 ? <Text style={{color:'red',textAlign:'center'}}>{credentialsError}</Text> :null}
                 </View>
 
                 <View
@@ -114,9 +135,12 @@ const SignUpScreen = ({ navigation }) => {
                         Already have an account ?
                     </Text>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <View style={{flexDirection:'row'}}>
+                    {loading? <ActivityIndicator size='small' style={{alignSelf:'center'}} color="white"/> :null}
                         <Text style={{ color: COLORS.pink, fontWeight: 'bold' }}>
                             Sign in
                         </Text>
+                        </View>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

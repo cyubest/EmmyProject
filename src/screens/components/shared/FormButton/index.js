@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import COLORS from '../colors/color';
 
 const FormButton = ({
     labelText = '',
     handleOnPress = null,
     style,
+    loading,
     isPrimary = true,
     ...more
 }) => {
@@ -22,6 +23,14 @@ const FormButton = ({
             activeOpacity={0.9}
             onPress={handleOnPress}
             {...more}>
+             {loading ? (
+                <ActivityIndicator
+                    animating={loading}
+                    size={'small'}
+                    color={'white'}
+                    style={{ alignSelf: 'center', }}
+                />
+            ):null} 
             <Text
                 style={{
                     textAlign: 'center',

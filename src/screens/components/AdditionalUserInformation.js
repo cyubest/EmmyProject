@@ -6,29 +6,21 @@ import { RadioButton } from 'react-native-paper';
 import COLORS from './shared/colors/color';
 import * as yup from 'yup';
 import { addPersonalInformation } from '../../utils/database';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ScrollView } from 'react-native-gesture-handler';
+const added ='done';
 
-export default function AdditionalUserInformation({route}) {
-  const {user} = route.params;
+export default function AdditionalUserInformation({navigation,route}) {
+  const {user,questId,dataTitle,dataDescription} = route.params;
   const [value, setValue] = React.useState('Male');
-  
-  const handleOptionOneSave = async () => {
 
-    
-    let currAnswerId = Math.floor(
-        100000 + Math.random() * 9000,
-    ).toString();
+  const confirmAddedInfo = async() =>{
+    await AsyncStorage.setItem('done',added)
+  }
 
-    // Save to option firestore
-    await createOptionList(currentPersonalId, currentQuestionIdSaved,currAnswerId, {
-      fullName,age,address,gender,occupation,userId
-    });
-
-    // Reset
-    setOptionOne('');
-    setIsResultModalVisible(true)
-};
 
   return (
+    <ScrollView>
     <View>
         <Formik
 
@@ -48,7 +40,13 @@ export default function AdditionalUserInformation({route}) {
         // Save to option firestore
         await addPersonalInformation(currentPersonalId, values.fullName,values.age,values.address,values.gender,values.occupation,user);
         // console.log('now now',currentPersonalId, values.fullName,values.age,values.address,values.gender,values.occupation,user)
-
+        confirmAddedInfo()
+        navigation.navigate('PlayQuestionScreen', {
+          questId: questId,
+          user:user,
+          dataDescription:dataDescription,
+          dataTitle:dataTitle
+        });
         }}
         validationSchema={yup.object().shape({
           fullName: yup.string().required('fullName is required'),
@@ -129,5 +127,6 @@ export default function AdditionalUserInformation({route}) {
 
         </Formik>
     </View>
+    </ScrollView>
   )
 }

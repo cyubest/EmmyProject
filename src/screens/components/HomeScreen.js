@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import {TouchableOpacity} from 'react-native-gesture-handler';
 import {signOut} from '../../utils/auth';
-import {getQuestions} from '../../utils/database';
+import {getAnswersList, getQuestions} from '../../utils/database';
 import COLORS from './shared/colors/color';
 import CreateButton from './shared/FormButton/CreateButton';
 import MaterialIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -20,19 +20,41 @@ const HomeScreen = ({navigation}) => {
   const [refreshing, setRefreshing] = useState(false);
   const [showButton,setShowButton] = useState(true);
   const [userLoggedIn,setUserLoggedIn] = useState(null);
-  const [viewInfo,setViewInfo] = useState(false);
-
+  const [viewInfo,setViewInfo] = useState(null);
+  const [admin,setAdmin] = useState('');
+  const [AnsweredList,setAnswersList]=useState([]);
   useEffect(() => {
     getLoggedUser();
   }, [])
   
-  
   const getLoggedUser = async () => {
   const user = await AsyncStorage.getItem('user')
   setUserLoggedIn(user);
+  const result = await AsyncStorage.getItem('done');
+  console.log(result,'hjshasjh')
+  setViewInfo(result)
+  
  }
 
  console.log(userLoggedIn,'userLoggedIn');
+ console.log(JSON.stringify(AnsweredList, 0, 2),'answers now')
+
+
+ const getAllAnswersList = async () => {
+  const answers = await getAnswersList();
+
+  // Transform Questions Data
+  let tempAnswers = [];
+  await answers.docs.forEach(async quest => {
+    await tempAnswers.push({id: quest.id, ...quest.data()});
+
+  });
+  const arr = [];
+  tempAnswers.forEach(it => {
+    arr.push(it.dataTitle);
+  })
+  await setAnswersList(arr);
+};
 
   const getAllQuestions = async () => {
     setRefreshing(true);
@@ -43,29 +65,17 @@ const HomeScreen = ({navigation}) => {
     await questions.docs.forEach(async quest => {
       await tempQuestions.push({id: quest.id, ...quest.data()});
     });
-    await setAllQuestions([...tempQuestions])
+    const filteredQuestions = tempQuestions.filter(value => !AnsweredList.includes(value.title));
+    await setAllQuestions(filteredQuestions);
     setRefreshing(false)
+    console.log('get questions',tempQuestions)
   };
 
   useEffect(() => {
     getAllQuestions();
+    getAllAnswersList();
   }, []);
 
-
-  useEffect(() => {
-    checkViewInfo();
-}, [])
-
-const checkViewInfo = async () => {
-
-    await AsyncStorage.getItem('@viewInfo').then(value => {
-        if (value !== null) {
-            setViewedOnBoarding(true)
-            console.log(viewedOnBoarding)
-        }
-
-    })
-}
   return (
     <SafeAreaView
       style={{
@@ -104,49 +114,73 @@ const checkViewInfo = async () => {
         style={{
           paddingVertical: 20,
         }}
-        renderItem={({item}) => (
-          <View
-            style={{
-              padding: 20,
-              borderRadius: 5,
-              marginVertical: 5,
-              marginHorizontal: 10,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: COLORS.white,
-              elevation: 2,
-            }}>
-               
-            <View style={{flex: 1, paddingRight: 10}}>
-              <Text style={{fontSize: 18, color: COLORS.black}}>
-                {item.title}
-              </Text>
-              {item.description != '' ? (
-                <Text style={{opacity: 0.5}}>{item.description}</Text>
-              ) : null}
-            </View>
-            <TouchableOpacity
+        renderItem={({item}) => {
+
+          return(
+            <View
               style={{
-                paddingVertical: 10,
-                paddingHorizontal: 30,
-                borderRadius: 50,
-                backgroundColor: COLORS.primary + '20',
-              }}
-              onPress={() => {
-                navigation.navigate('AdditionalUserInformation', {
-                  questId: item.id,
-                  user:userLoggedIn
-                });
+                padding: 20,
+                borderRadius: 5,
+                marginVertical: 5,
+                marginHorizontal: 10,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: COLORS.white,
+                elevation: 2,
               }}>
-              <Text style={{color: COLORS.primary}}>Play</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+                 
+              <View style={{flex: 1, paddingRight: 10}}>
+                <Text style={{fontSize: 18, color: COLORS.black}}>
+                  {item.title}
+                </Text>
+                {item.description != '' ? (
+                  <Text style={{opacity: 0.5}}>{item.description}</Text>
+                ) : null}
+              </View>
+             {viewInfo ===null ? <TouchableOpacity
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 30,
+                  borderRadius: 50,
+                  backgroundColor: COLORS.primary + '20',
+                }}
+                onPress={() => {
+                  navigation.navigate('AdditionalUserInformation', {
+                    questId: item.id,
+                    user:userLoggedIn,
+                    dataTitle:item.title,
+                    dataDescription:item.description
+                  });
+                }}>
+                <Text style={{color: COLORS.primary}}>Play</Text>
+              </TouchableOpacity>
+              :
+              <TouchableOpacity
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 30,
+                  borderRadius: 50,
+                  backgroundColor: COLORS.primary + '20',
+                }}
+                onPress={() => {
+                  navigation.navigate('PlayQuestionScreen', {
+                    questId: item.id,
+                    user:userLoggedIn,
+                    dataTitle:item.title,
+                    dataDescription:item.description
+                  });
+                }}>
+                <Text style={{color: COLORS.primary}}>Play</Text>
+              </TouchableOpacity>
+              }
+            </View>
+          )
+        }}
       />
 
       {/* Button */}
-   {showButton ?  <View style={{flexDirection:'column'}}>
+   {/* {showButton ?  <View style={{flexDirection:'column'}}>
       <View style={{position: 'absolute', bottom: 70,right: 20,}} >
      <TouchableOpacity onPress={() => setShowButton(false)} >
        <MaterialIcons name="close-circle" size={30} color={COLORS.primary} />
@@ -163,7 +197,7 @@ const checkViewInfo = async () => {
           }}
           handleOnPress={() => navigation.navigate('CreateQuestions',{user:userLoggedIn})}
         />
-      </View> : null} 
+      </View> : null}  */}
     </SafeAreaView>
   );
 };

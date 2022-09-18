@@ -5,7 +5,7 @@ import { createDataSetsQuestion } from '../../../utils/database';
 import COLORS from '../shared/colors/color';
 import FormButton from '../shared/FormButton';
 import FormInput from '../shared/FormInput';
-
+import moment from 'moment';
 
 const CreateDataSets = ({ navigation,route }) => {
     const {user} = route.params;
@@ -13,8 +13,7 @@ const CreateDataSets = ({ navigation,route }) => {
     const [description, setDescription] = useState('');
     const [errorTitleMessage, setErrorTitleMessage] = useState('');
     const [errorDescriptionMessage, setErrorDescriptionMessage] = useState('');
-   
-    console.log(user,'user.uid')
+    const[created_on,setCreated_on] = useState(moment());
 
     const handleQuestionsSave = async () => {
 
@@ -30,7 +29,7 @@ const CreateDataSets = ({ navigation,route }) => {
         } else {
             const currentDataSetId = Math.floor(100000 + Math.random() * 9000).toString();
             // Save to firestore
-            await createDataSetsQuestion(currentDataSetId, title, description, user);
+            await createDataSetsQuestion(currentDataSetId, title, description,created_on, user);
             // console.log(currentDataSetId,user, title, description,'currentDataSetId,userLoggedIn.uid, title, description');
             // Navigate to Add Question string
             navigation.navigate('AddQuestion', {

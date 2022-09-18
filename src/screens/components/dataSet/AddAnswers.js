@@ -1,5 +1,5 @@
 import React, { Component, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, ScrollView, TouchableOpacity, Image,Modal } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, ScrollView, TouchableOpacity, Image,Modal, ToastAndroid } from 'react-native';
 import { createOptionList, createQuestions } from '../../../utils/database';
 import COLORS from '../shared/colors/color';
 import FormButton from '../shared/FormButton';
@@ -18,6 +18,9 @@ const AnswersData = ({ navigation, route }) => {
 
     const [question, setQuestion] = useState('');
     const [optionOne, setOptionOne] = useState('');
+    const [optionTwo, setOptionTwo] = useState('');
+    const [optionThree, setOptionThree] = useState('');
+    const [optionFour, setOptionFour] = useState('');
     const [otherInfo, setOtherInfo] = useState('');
     const [imageUri, setImageUri] = useState('');
     const [errorMessage, setErrorMessage] = useState('Please enter the question');
@@ -52,13 +55,19 @@ const AnswersData = ({ navigation, route }) => {
     
         await createQuestions(currentDataSetId, currentQuestionId, {
             question: question,
+            options:[optionOne,optionTwo, optionThree, optionFour]
         });
+        ToastAndroid.show('Question saved', ToastAndroid.SHORT);
 
         //Show modal for some optionList
-        setModalVisible(!modalVisible)
+        // setModalVisible(!modalVisible)
 
         // Reset
         setQuestion('');
+        setOptionOne('');
+        setOptionTwo('');
+        setOptionThree('');
+        setOptionFour('');
     };
 
      
@@ -80,7 +89,7 @@ const AnswersData = ({ navigation, route }) => {
 
         // Reset
         setOptionOne('');
-        setIsResultModalVisible(true)
+        // setIsResultModalVisible(true)
     };
 
     return (
@@ -143,7 +152,7 @@ const AnswersData = ({ navigation, route }) => {
 
 
                     {/* Options */}
-                    {/* <View style={{ marginTop: 30 }}>
+                    <View style={{ marginTop: 30 }}>
                         <FormInput
                             labelText="Option 1"
                             onChangeText={val => setOptionOne(val)}
@@ -164,7 +173,7 @@ const AnswersData = ({ navigation, route }) => {
                             onChangeText={val => setOptionFour(val)}
                             value={optionFour}
                         />
-                    </View> */}
+                    </View>
                     <FormButton
                         labelText="Save Question"
                         handleOnPress={() => handleQuestionSave()}
@@ -174,7 +183,7 @@ const AnswersData = ({ navigation, route }) => {
                         isPrimary={false}
                         handleOnPress={() => {
                             setCurrentQuestionId('');
-                            navigation.navigate('HomeScreen');
+                            navigation.navigate('DashBoard');
                         }}
                         style={{
                             marginVertical: 20,
@@ -237,7 +246,7 @@ const AnswersData = ({ navigation, route }) => {
                     setModalVisible(false);
                     setOptionOne('');
                     }}
-                    goHome={() => navigation.navigate('HomeScreen')}
+                    goHome={() => navigation.navigate('DashBoard')}
                 />
         </KeyboardAvoidingView>
     );
